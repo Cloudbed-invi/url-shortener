@@ -1,54 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>My URL Shortener</title>
+  <meta charset="UTF-8">
+  <title>Cloudbed URL Shortener</title>
   <style>
     body { font-family: sans-serif; padding: 2rem; transition: background 0.3s, color 0.3s; }
     body.dark { background: #121212; color: #eee; }
     .toggle { position: fixed; top: 1rem; right: 1rem; }
-    input, button { font-size: 1rem; padding: 0.5rem; }
+    input, button { font-size: 1rem; padding: 0.5rem; margin: 0.5rem 0; }
     label { display: block; margin-bottom: 0.5rem; }
   </style>
 </head>
 <body>
-  <!-- Light/Dark mode toggle -->
+  <!-- Light/Dark Mode Toggle -->
   <label class="toggle">
     Dark Mode: <input type="checkbox" id="modeToggle">
   </label>
 
-  <h1>Shorten a URL</h1>
+  <h1>Cloudbed URL Shortener</h1>
   <form id="shortenForm">
     <label>Destination URL:<br>
       <input type="url" name="longUrl" placeholder="https://example.com/..." required>
     </label>
-    <label>Short Slug:<br>
-      <input type="text" name="slug" placeholder="e.g. my-link" required>
+    <label>Custom Slug:<br>
+      <input type="text" name="slug" placeholder="e.g. my-portfolio" required>
     </label>
     <button type="submit">Create Short URL</button>
   </form>
   <p id="status"></p>
 
   <script>
-    // Load saved theme
+    // Light/Dark Mode Toggle
     if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
     document.getElementById('modeToggle').checked = document.body.classList.contains('dark');
-    // Toggle handler
+
     document.getElementById('modeToggle').addEventListener('change', function() {
       document.body.classList.toggle('dark');
       localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
     });
 
-    // On form submit, call the Apps Script to create the short link
+    // Redirect Handler (Path-Based)
+    const path = window.location.pathname.replace('/url-shortener/', '').trim();
+    if (path && path !== "index.html") {
+      window.location.href = 'YOUR_GOOGLE_SCRIPT_WEBAPP_URL?slug=' + encodeURIComponent(path);
+    }
+
+    // Form Submit Handler
     const form = document.getElementById('shortenForm');
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const longUrl = encodeURIComponent(form.longUrl.value);
       const slug = encodeURIComponent(form.slug.value);
-      const webAppURL = 'YOUR_SCRIPT_WEB_APP_URL';
+      const webAppURL = 'https://script.google.com/macros/s/AKfycbzNsSy_--ZECPoA_ywZv6O5OxO9vFYRla5IaVCt73Hj-FVvsrhYnjnqdPiToyjzvVJt/exec';  // Put your Apps Script Web App URL here
       const res = await fetch(`${webAppURL}?add=${slug}&url=${longUrl}`);
       const text = await res.text();
-      document.getElementById('status').textContent = text;
+      document.getElementById('status').textContent = `Status: ${text}`;
+      if (text.startsWith('Added')) {
+        document.getElementById('status').innerHTML += `<br>Short URL: <a href="./${slug}" target="_blank">${window.location.origin}/url-shortener/${slug}</a>`;
+      }
     });
   </script>
 </body>
