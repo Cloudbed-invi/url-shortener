@@ -33,31 +33,52 @@
     // Light/Dark Mode Toggle
     if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
     document.getElementById('modeToggle').checked = document.body.classList.contains('dark');
-
     document.getElementById('modeToggle').addEventListener('change', function() {
       document.body.classList.toggle('dark');
       localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
     });
 
-    // Redirect Handler (Path-Based)
-    const path = window.location.pathname.replace('/url-shortener/', '').replace('404.html', '').trim();
-    if (path && path !== "index.html") {
-      window.location.href = 'YOUR_GOOGLE_SCRIPT_WEBAPP_URL?slug=' + encodeURIComponent(path);
+    // Path-based redirect handler (for direct slug visits)
+    const path = window.location.pathname.replace('/url-shortener/', '').replace('404.html','').trim();
+    if (path && path !== 'index.html') {
+      window.location.href = 'https://script.google.com/macros/s/AKfycbzNsSy_--ZECPoA_ywZv6O5OxO9vFYRla5IaVCt73Hj-FVvsrhYnjnqdPiToyjzvVJt/exec?slug=' + encodeURIComponent(path);
     }
 
-    // Form Submit Handler
+    // JSONP form submit
     const form = document.getElementById('shortenForm');
-    form.addEventListener('submit', async e => {
+    form.addEventListener('submit', e => {
       e.preventDefault();
+      // Clean up old callback script
+      const old = document.getElementById('jsonp-callback');
+      if (old) old.remove();
+
+      // Read inputs
       const longUrl = encodeURIComponent(form.longUrl.value);
-      const slug = encodeURIComponent(form.slug.value);
-      const webAppURL = 'https://script.google.com/macros/s/AKfycbzNsSy_--ZECPoA_ywZv6O5OxO9vFYRla5IaVCt73Hj-FVvsrhYnjnqdPiToyjzvVJt/exec';  // Put your Apps Script Web App URL here
-      const res = await fetch(`${webAppURL}?add=${slug}&url=${longUrl}`);
-      const text = await res.text();
-      document.getElementById('status').textContent = `Status: ${text}`;
-      if (text.startsWith('Added')) {
-        document.getElementById('status').innerHTML += `<br>Short URL: <a href="./${slug}" target="_blank">${window.location.origin}/url-shortener/${slug}</a>`;
-      }
+      const slug    = encodeURIComponent(form.slug.value);
+      const gsUrl   = 'YOUR_GOOGLE_SCRIPT_WEBAPP_URL';
+      const callbackName = 'onJsonpResponse';
+
+      // Define callback
+      window[callbackName] = function(data) {
+        const statusEl = document.getElementById('status');
+        if (data.status === 'added') {
+          statusEl.innerHTML = `Added <b>${data.slug}</b><br>
+            Short URL: <a href="./${data.slug}" target="_blank">
+              ${window.location.origin}/url-shortener/${data.slug}
+            </a>`;
+        } else {
+          statusEl.textContent = `Error: ${data.message}`;
+        }
+        // Clean up
+        document.getElementById('jsonp-callback').remove();
+        delete window[callbackName];
+      };
+
+      // Inject JSONP script
+      const s = document.createElement('script');
+      s.id  = 'jsonp-callback';
+      s.src = `${gsUrl}?add=${slug}&url=${longUrl}&callback=${callbackName}`;
+      document.body.appendChild(s);
     });
   </script>
 </body>
