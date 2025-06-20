@@ -40,7 +40,7 @@
     });
 
     // Redirect Handler (Path-Based)
-    const path = window.location.pathname.replace('/url-shortener/', '').trim();
+    const path = window.location.pathname.replace('/url-shortener/', '').replace('404.html', '').trim();
     if (path && path !== "index.html") {
       window.location.href = 'YOUR_GOOGLE_SCRIPT_WEBAPP_URL?slug=' + encodeURIComponent(path);
     }
